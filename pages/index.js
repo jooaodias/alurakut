@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box } from '../src/components/Box';
 import { MainGrid } from '../src/components/MainGrid';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
@@ -28,16 +28,37 @@ function ProfileSideBar(props) {
   );
 }
 
+function ProfileRelationsBox({ title, items }) {
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className="smalltitle">
+        {title} ({items.length})
+      </h2>
+      <ul>
+        {items.map((items, i) => {
+          return (
+            <li key={`${items.id}__${i}`}>
+              <a href={`https://github.com/${items.login}.png`}>
+                <img src={items.avatar_url} />
+                <span>{items.login}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </ProfileRelationsBoxWrapper>
+  );
+}
+
 export default function Home() {
   const user = 'jooaodias';
   const [comunidades, setComunidades] = useState([
     {
       id: '123123534534515',
       titulo: 'AluraKut',
-      image: '',
+      image: 'https://placehold.it/300x300',
     },
   ]);
-  console.log(comunidades);
   const pessoasFavs = [
     'juunegreiros',
     'omariosouto',
@@ -46,6 +67,18 @@ export default function Home() {
     'felipefialho',
   ];
 
+  const [seguidores, setSeguidores] = useState([]);
+
+  useEffect(() => {
+    fetch('https://api.github.com/users/jooaodias/followers')
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        setSeguidores(data);
+        console.log(data);
+      });
+  }, []);
   return (
     <>
       <AlurakutMenu githubUser={user} />
@@ -98,6 +131,7 @@ export default function Home() {
           className="profileRelationsArea"
           style={{ gridArea: 'profileRelationsArea' }}
         >
+          <ProfileRelationsBox title={'Seguidores'} items={seguidores} />
           <ProfileRelationsBoxWrapper>
             <h2 className="smalltitle">Comunidades ({comunidades.length})</h2>
             <ul>
@@ -105,13 +139,7 @@ export default function Home() {
                 return (
                   <li key={`${comunidade.key}__${i}`}>
                     <a href={`/users/${comunidade.title}`}>
-                      <img
-                        src={
-                          comunidade.image
-                            ? comunidade.image
-                            : `https://placehold.it/300x300`
-                        }
-                      />
+                      <img src={comunidade.image} />
                       <span>{comunidade.title}</span>
                     </a>
                   </li>
