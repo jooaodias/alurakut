@@ -52,13 +52,7 @@ function ProfileRelationsBox({ title, items }) {
 
 export default function Home() {
   const user = 'jooaodias';
-  const [comunidades, setComunidades] = useState([
-    {
-      id: '123123534534515',
-      titulo: 'AluraKut',
-      image: 'https://placehold.it/300x300',
-    },
-  ]);
+  const [comunidades, setComunidades] = useState();
   const pessoasFavs = [
     'juunegreiros',
     'omariosouto',
@@ -70,12 +64,39 @@ export default function Home() {
   const [seguidores, setSeguidores] = useState([]);
 
   useEffect(() => {
+    //Cathing followers
     fetch('https://api.github.com/users/jooaodias/followers')
       .then(response => {
         return response.json();
       })
       .then(data => {
         setSeguidores(data);
+        console.log(data);
+      });
+
+    // API Graphql
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        Authorization: '41052c30ad3bcfef11750e5b06cb1f',
+        'Content-Type': 'aplication/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query: `query { 
+          allCommunities { 
+            title  
+            id
+            imageUrl
+            creatorSlug
+          } 
+        }`,
+      }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        const comunidadesData = data.data.allCommunities;
+        setComunidades(comunidadesData);
         console.log(data);
       });
   }, []);
@@ -100,12 +121,23 @@ export default function Home() {
                 const dadosForm = new FormData(e.target);
 
                 const comunidade = {
-                  id: new Date().toISOString(),
                   title: dadosForm.get('title'),
-                  image: dadosForm.get('image'),
+                  imageUrl: dadosForm.get('image'),
+                  creatorSlug: user,
                 };
-                const comunidadesAtualizadas = [...comunidades, comunidade];
-                setComunidades(comunidadesAtualizadas);
+
+                fetch('/api/comunidades', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(comunidade),
+                }).then(async res => {
+                  const dados = await res.json();
+                  const comunidade = dados.record;
+                  const comunidadesAtualizadas = [...comunidades, comunidade];
+                  setComunidades(comunidadesAtualizadas);
+                });
               }}
             >
               <div>
@@ -132,14 +164,15 @@ export default function Home() {
           style={{ gridArea: 'profileRelationsArea' }}
         >
           <ProfileRelationsBox title={'Seguidores'} items={seguidores} />
+
           <ProfileRelationsBoxWrapper>
-            <h2 className="smalltitle">Comunidades ({comunidades.length})</h2>
+            <h2 className="smalltitle">Comunidades ({comunidades?.length})</h2>
             <ul>
-              {comunidades.map((comunidade, i) => {
+              {comunidades?.map((comunidade, i) => {
                 return (
                   <li key={`${comunidade.key}__${i}`}>
-                    <a href={`/users/${comunidade.title}`}>
-                      <img src={comunidade.image} />
+                    <a href={`/comunities/${comunidade.id}`}>
+                      <img src={comunidade.imageUrl} />
                       <span>{comunidade.title}</span>
                     </a>
                   </li>
